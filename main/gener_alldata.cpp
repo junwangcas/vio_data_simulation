@@ -75,7 +75,8 @@ void CreatePointsLines(Points& points, Lines& lines)
 }
 
 int main(){
-
+    /// @brief 整体代码入口．
+    /// 这里的代码待优化．
     // Eigen::Quaterniond Qwb;
     // Qwb.setIdentity();
     // Eigen::Vector3d omega (0,0,M_PI/10);
@@ -94,12 +95,13 @@ int main(){
     // 建立keyframe文件夹
     mkdir("keyframe", 0777);
 
+    /// 生成三维空间点．三维的线，主要是用来做vins的．
     // 生成3d points
     Points points;
     Lines lines;
     CreatePointsLines(points, lines);
 
-    // IMU model
+    /// IMU的模型
     Param params;
     IMU imuGen(params);
 

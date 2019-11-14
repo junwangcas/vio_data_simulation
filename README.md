@@ -38,3 +38,5 @@ python_tool/：文件夹里为可视化工具，draw_points.py就是动态绘制
 > timestamp (1)，cam quaternion(4)，cam position(3)，imu gyro(3)，imu acc(3)
 
 注意，由于imu和cam的存储采用的是同一个函数，所以cam也会存储一些gyro,acc这些数据，但是没用，是多余存储的。
+
+Mark 在该ｃｏｍｍｉｔ基础上进行开发．

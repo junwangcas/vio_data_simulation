@@ -23,10 +23,10 @@ public:
 
     // noise
     double gyro_bias_sigma = 1.0e-5; /// 陀螺仪偏置的标准差
-    double acc_bias_sigma = 0.0001; ///
+    double acc_bias_sigma = 0.0001; /// 加速度计偏置的标准差
 
-    double gyro_noise_sigma = 0.015;    // rad/s * 1/sqrt(hz)
-    double acc_noise_sigma = 0.019;      //　m/(s^2) * 1/sqrt(hz)
+    double gyro_noise_sigma = 0.015;   /// 陀螺仪测量值的标准差 // rad/s * 1/sqrt(hz)　
+    double acc_noise_sigma = 0.019;    /// 加速度计测量值的标准差  //　m/(s^2) * 1/sqrt(hz)
 
     double pixel_noise = 1;              // 1 pixel noise
 

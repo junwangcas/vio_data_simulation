@@ -105,10 +105,12 @@ int main(){
     Param params;
     IMU imuGen(params);
 
+    /// 生成ＩＭＵ数据，包括位置速度姿态，角速度，加速度．
     // create imu data
     // imu pose gyro acc
     std::vector< MotionData > imudata;
     std::vector< MotionData > imudata_noise;
+    /// 以时间驱动，生成IMU数据．
     for (float t = params.t_start; t<params.t_end;) {
         MotionData data = imuGen.MotionModel(t);
         imudata.push_back(data);

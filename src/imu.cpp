@@ -75,34 +75,44 @@ void IMU::addIMUnoise(MotionData& data)
 
 MotionData IMU::MotionModel(double t)
 {
-
+    /// @param t, 绝对时间ｔ，只用作打时间标签．
     MotionData data;
     // param
-    float ellipse_x = 15;
+    /// 这里假设ｘ＝ｙ；
+    float ellipse_x = 20;
     float ellipse_y = 20;
-    float z = 1;           // z轴做sin运动
+    float z = 0;           // z轴做sin运动
     float K1 = 10;          // z轴的正弦频率是x，y的k1倍
-    float K = M_PI/ 10;    // 20 * K = 2pi 　　由于我们采取的是时间是20s, 系数K控制yaw正好旋转一圈，运动一周
+    /// k*t = 0-2pi, 相当于角度．
+    float K = 2*M_PI/ 20;    // 20 * K = 2pi 　　由于我们采取的是时间是20s, 系数K控制yaw正好旋转一圈，运动一周
 
     // translation
     // twb:  body frame in world frame
-    Eigen::Vector3d position( ellipse_x * cos( K * t) + 5, ellipse_y * sin( K * t) + 5,  z * sin( K1 * K * t ) + 5);
+    /// 一个圆上的位置．
+    Eigen::Vector3d position( ellipse_x * cos( K * t), ellipse_y * sin( K * t),  z * sin( K1 * K * t ));
+    /// 位置对ｔ求导 = 速度
     Eigen::Vector3d dp(- K * ellipse_x * sin(K*t),  K * ellipse_y * cos(K*t), z*K1*K * cos(K1 * K * t));              // position导数　in world frame
     double K2 = K*K;
+    ///　位置对ｔ求二阶导　＝　加速度
     Eigen::Vector3d ddp( -K2 * ellipse_x * cos(K*t),  -K2 * ellipse_y * sin(K*t), -z*K1*K1*K2 * sin(K1 * K * t));     // position二阶导数
 
+    /// 因为是6 DOF的，因此位置与姿态是解耦的，可以随意生成姿态．
     // Rotation
     double k_roll = 0.1;
     double k_pitch = 0.2;
     Eigen::Vector3d eulerAngles(k_roll * cos(t) , k_pitch * sin(t) , K*t );   // roll ~ [-0.2, 0.2], pitch ~ [-0.3, 0.3], yaw ~ [0,2pi]
+    /// 姿态对时间的导数，就是角速度
     Eigen::Vector3d eulerAnglesRates(-k_roll * sin(t) , k_pitch * cos(t) , K);      // euler angles 的导数
 
 //    Eigen::Vector3d eulerAngles(0.0,0.0, K*t );   // roll ~ 0, pitch ~ 0, yaw ~ [0,2pi]
 //    Eigen::Vector3d eulerAnglesRates(0.,0. , K);      // euler angles 的导数
 
+    /// 由欧拉角转换为旋转矩阵；
     Eigen::Matrix3d Rwb = euler2Rotation(eulerAngles);         // body frame to world frame
+    ///@todo 当使用欧拉角来进行旋转时，就涉及到角度顺序了．
     Eigen::Vector3d imu_gyro = eulerRates2bodyRates(eulerAngles) * eulerAnglesRates;   //  euler rates trans to body gyro
 
+    /// Ｒ＊局部加速度（测量加速度）　＝　全局加速度 - 重力加速度
     Eigen::Vector3d gn (0,0,-9.81);                                   //  gravity in navigation frame(ENU)   ENU (0,0,-9.81)  NED(0,0,9,81)
     Eigen::Vector3d imu_acc = Rwb.transpose() * ( ddp -  gn );  //  Rbw * Rwn * gn = gs
 
@@ -116,10 +126,10 @@ MotionData IMU::MotionModel(double t)
 
 }
 
-//读取生成的imu数据并用imu动力学模型对数据进行计算，最后保存imu积分以后的轨迹，
-//用来验证数据以及模型的有效性。
 void IMU::testImu(std::string src, std::string dist)
 {
+    ///@brief //读取生成的imu数据并用imu动力学模型对数据进行计算，最后保存imu积分以后的轨迹，
+    ////用来验证数据以及模型的有效性。
     std::vector<MotionData>imudata;
     LoadPose(src,imudata);
 
@@ -146,7 +156,10 @@ void IMU::testImu(std::string src, std::string dist)
         dq.z() = dtheta_half.z();
         dq.normalize();
         
-        /// imu 动力学模型 欧拉积分
+        /// imu 动力学模型 欧拉积分(我们自己的积分就是用的这种)
+        /// 更新姿态　qwb* = qwb*dq;
+        /// 更新位置　Pwb* = Pwb + vdt + 0.5 a*t^2;
+        /// 更新速度：Vw = Vw + a*dt;
         Eigen::Vector3d acc_w = Qwb * (imupose.imu_acc) + gw;  // aw = Rwb * ( acc_body - acc_bias ) + gw
         Qwb = Qwb * dq;
         Pwb = Pwb + Vw * dt + 0.5 * dt * dt * acc_w;

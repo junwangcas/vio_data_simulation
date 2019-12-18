@@ -11,6 +11,7 @@ using Point = Eigen::Vector4d;
 using Points = std::vector<Point, Eigen::aligned_allocator<Point> >;
 using Line = std::pair<Eigen::Vector4d, Eigen::Vector4d>;
 using Lines = std::vector<Line, Eigen::aligned_allocator<Line> >;
+bool if_use_pixel_obs = true;
 
 void CreatePointsLines(Points& points, Lines& lines)
 {
@@ -130,6 +131,7 @@ int main(){
 
     imuGen.testImu("imu_pose.txt", "imu_int_pose.txt");     // test the imu data, integrate the imu data to generate the imu trajecotry
     imuGen.testImu("imu_pose_noise.txt", "imu_int_pose_noise.txt");
+    imuGen.testPreintergration("imu_pose.txt", "imu_int_pose.txt");
 
     // cam pose
     std::vector< MotionData > camdata;
@@ -165,8 +167,11 @@ int main(){
             Eigen::Vector4d pc1 = Twc.inverse() * pw; // T_wc.inverse() * Pw  -- > point in cam frame
 
             if(pc1(2) < 0) continue; // z必须大于０,在摄像机坐标系前方
-
             Eigen::Vector2d obs(pc1(0)/pc1(2), pc1(1)/pc1(2)) ;
+            if (if_use_pixel_obs) {
+                obs(0) = obs(0) *460 + 255;
+                obs(1) = obs(1)*460 + 255;
+            }
             // if( (obs(0)*460 + 255) < params.image_h && ( obs(0) * 460 + 255) > 0 &&
                    // (obs(1)*460 + 255) > 0 && ( obs(1)* 460 + 255) < params.image_w )
             {

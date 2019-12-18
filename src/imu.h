@@ -59,7 +59,7 @@ public:
     /// 增加噪声
     void addIMUnoise(MotionData& data);
     void testImu(std::string src, std::string dist);        // imu数据进行积分，用来看imu轨迹
-
+    void testPreintergration(std::string src, std::string dist);             // 使用逐项积分与预积分
 };
 
 #endif //IMUSIMWITHPOINTLINE_IMU_H

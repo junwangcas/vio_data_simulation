@@ -126,6 +126,62 @@ MotionData IMU::MotionModel(double t)
 
 }
 
+void IMU::testPreintergration(std::string src, std::string dist) {
+    /// @brief 读取前面生成的IMU数据，利用预积分，对整个轨迹进行恢复．
+
+    /// IMU的数据保存在
+    std::vector<MotionData> imudata;
+    LoadPose(src,imudata);
+
+    std::ofstream save_points;
+    save_points.open(dist);
+
+    double dt = param_.imu_timestep;
+    Eigen::Vector3d Pwb = init_twb_;              // position :    from  imu measurements
+    Eigen::Quaterniond Qwb(init_Rwb_);            // quaterniond:  from imu measurements
+    Eigen::Vector3d Vw = init_velocity_;          // velocity  :   from imu measurements
+    Eigen::Vector3d gw(0,0,-9.81);    // ENU frame
+    Eigen::Vector3d temp_a;
+    Eigen::Vector3d theta;
+
+    /// 对于姿态Ｑ
+    Eigen::Quaterniond Qwb0_100(init_Rwb_);
+    Eigen::Quaterniond Qwb100_200(init_Rwb_);
+
+    for (int i = 0; i < 100; i++) {
+        MotionData imudata_one = imudata[i];
+        /// increamental value;
+        Eigen::Vector3d dw_half;
+        dw_half = imudata_one.imu_gyro*dt*0.5;
+        Eigen::Quaterniond dq;
+        dq.w() = 1;
+        dq.x() = dw_half.x();
+        dq.y() = dw_half.y();
+        dq.z() = dw_half.z();
+        Qwb0_100 = Qwb0_100*dq;
+    }
+
+    for (int i = 100; i < 200; i++) {
+        MotionData imudata_one = imudata[i];
+        /// increamental value;
+        Eigen::Vector3d dw_half;
+        dw_half = imudata_one.imu_gyro*dt*0.5;
+        Eigen::Quaterniond dq;
+        dq.w() = 1;
+        dq.x() = dw_half.x();
+        dq.y() = dw_half.y();
+        dq.z() = dw_half.z();
+        Qwb100_200 = Qwb100_200*dq;
+    }
+    /// final pose
+    Eigen::Quaterniond Qwbfinal = Qwb0_100*Qwb100_200;
+    Eigen::Quaterniond Qwb_data = Eigen::Quaterniond(imudata[199].Rwb);
+    Eigen::Quaterniond Qwb_resisual = Qwbfinal.inverse()*Qwb_data;
+    std::cout << Qwbfinal.w() << " " << Qwbfinal.x() << " " << Qwbfinal.y() << " " << Qwbfinal.z() << "\n";
+    std::cout << Qwb_data.w() << " " << Qwb_data.x() << " " << Qwb_data.y() << " " << Qwb_data.z() << "\n";
+    std::cout << Qwb_resisual.w() << " " << Qwb_resisual.x() << " " << Qwb_resisual.y() << " " << Qwb_resisual.z() << "\n";
+}
+
 void IMU::testImu(std::string src, std::string dist)
 {
     ///@brief //读取生成的imu数据并用imu动力学模型对数据进行计算，最后保存imu积分以后的轨迹，
